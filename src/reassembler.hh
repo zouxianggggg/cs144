@@ -49,5 +49,6 @@ private:
   //我的想法是用一个map来作为reassembler的缓冲区，不需要考虑index重复的情况，用index来作为
   uint64_t _currentIndex;
   uint64_t _capacity;
-  std::unordered_map<uint64_t,std::pair<std::string,bool>> _internalBuffer;
+  //现在是一个byte对应一个index，所以我们需要对每一个byte进行存储
+  std::unordered_map<uint64_t,std::pair<char,bool>> _internalBuffer;
 };

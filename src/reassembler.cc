@@ -9,15 +9,25 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   //如果index对不上的话，那么就暂时先将其放在缓冲区中
   if (first_index == _currentIndex)   //正好是下一个index的情况
   {
-    //首先要判断我能不能写进去，也就是bytestream的capacity够不够
+    //首先能根据data的长度和bytestream的capacity综合判断，能写多少写多少
+    uint64_t writeIndex = 0;
     uint64_t dataLength = data.size();
     uint64_t ByteStreamCap = output_.writer().available_capacity();
-    if(dataLength > ByteStreamCap)
+    while ((writeIndex<dataLength)&&ByteStreamCap)
     {
-      //如果大于，能写多少写多少，剩下的放进缓冲区？
+     output_.writer().push(std::string(data.at(writeIndex++))); 
+     _currentIndex++;
+     ByteStreamCap = output_.writer().available_capacity();
+    }
+    //如果capacity为0，则说明不能再写了，此时也不会将剩下的byte放入buffer中，而是直接丢弃
+    //如果是data写完了且正好是last，需要关闭writer
+    if((writeIndex == dataLength) && is_last_substring)
+    {
+      output_.writer().close();
       return;
     }
-
+    //如果不是终结符，并且当前已经插入完毕的话，继续递归的插入
+    
 
 
     output_.writer().push(data);
