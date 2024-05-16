@@ -17,9 +17,10 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     uint64_t ByteStreamCap = output_.writer().available_capacity();
     while ((writeIndex < dataLength) && ByteStreamCap)
     {
-      std::string singleChar(1, data.at(writeIndex++));
+      std::string singleChar(1, data.at(writeIndex));
       output_.writer().push(singleChar);
       _currentIndex++;
+      writeIndex++;
       ByteStreamCap = output_.writer().available_capacity();
     }
     // If capacity is 0, it means we can't write anymore. In this case, we don't put the remaining bytes into the buffer and simply discard them.
@@ -45,11 +46,11 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
       if(curBufIndex == datasize - 1){
         if(is_last_substring)
         {
-          _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(std::string(1,data.at(curBufIndex)),true));
+          _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(data.at(curBufIndex),1));
         }
       }
       
-      _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(std::string(1,data.at(curBufIndex)),false));
+      _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(data.at(curBufIndex),0));
 
     }
 
