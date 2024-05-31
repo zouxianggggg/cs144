@@ -6,6 +6,77 @@ using namespace std;
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
 {
+
+  //不管大于小于还是等于，都要进行处理：
+  //1. first_index正好是当前index的情况下，这样就是正常状态，可以进行正常的插入
+  //2. first_index>index的情况下，暂存，根据capacity来
+  //3. first_index<index的情况下，也要看看后面有没有可以暂存的部分
+  //那就直接遍历好咯
+  uint64_t curIdx = first_index;
+  
+  for (uint64_t i = 0; i < data.length(); i++,curIdx++)
+  {
+
+    if(output_.writer().available_capacity()==0)
+    {
+      return;
+    }
+    if(curIdx == _currentIndex)
+    {
+      //等于的情况，顺着插入
+      std::string singleChar(1, data.at(i));
+      output_.writer().push(singleChar);
+      
+      _currentIndex++;
+      if((i==data.size()-1)&&is_last_substring)
+      {
+        output_.writer().close();
+        return;
+      }
+    }
+    else if(curIdx < _currentIndex)
+    {
+      ;
+    }
+    else{
+      //考虑暂存
+      //如果interbuffer里已经有了相同数据并且index不一样，那么后面的都不要了
+      if(_internalBuffer.size()>=output_.writer().available_capacity()-1)
+      {
+        return;
+      }
+      /*
+     for(auto c:_internalBuffer)
+     {
+      if(c.second.first == data[i])
+      {
+        if(c.first != curIdx)
+        {
+          return;
+        }
+      }
+     }*/
+     if((i == data.size() - 1)&&is_last_substring){
+        
+        _internalBuffer.emplace(curIdx,std::make_pair(data.at(i),1));
+        
+      }
+      else{
+        _internalBuffer.emplace(curIdx,std::make_pair(data.at(i),0));
+      } 
+    }
+  }
+  if(((curIdx==first_index))&&is_last_substring)
+  {
+    output_.writer().close();
+    return; 
+  }
+  recurseInsert();
+  
+
+
+
+  #if 0
   // Your code here.
   //首先判断当前的first_index，如果当前first_index正好是current_index+1，那么就可以将其插入到bytestream中
   //如果index对不上的话，那么就暂时先将其放在缓冲区中
@@ -35,7 +106,13 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   }
   else if(first_index > _currentIndex)
   {
+    //
+
+
+
+
     //大于的话，先暂存
+    //小于的话，也要暂存，因为可能他很长，后面的可以插入之类的
     //需不需要考虑capacity的大小？需要的，跟上面的直接插入一样，也是暂存datasize和capacity的最小值
     uint64_t datasize = data.size();
     uint64_t ByteStreamCap = output_.writer().available_capacity();
@@ -49,23 +126,20 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
           _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(data.at(curBufIndex),1));
         }
       }
-      
-      _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(data.at(curBufIndex),0));
+      else{
+          _internalBuffer.emplace(first_index+curBufIndex,std::make_pair(data.at(curBufIndex),0));
+      }      
+      curBufIndex++;
+      ByteStreamCap = output_.writer().available_capacity();
 
     }
-
-
-    
-
-
-
-
-
   }
-  else
-  {
-    //小于的话，直接丢弃
-  }
+  #endif
+  
+  (void)first_index;
+  (void)data;
+  (void)is_last_substring;
+
 }
 
 uint64_t Reassembler::bytes_pending() const
@@ -74,36 +148,43 @@ uint64_t Reassembler::bytes_pending() const
   return _internalBuffer.size();
 }
 
-bool Reassembler::recurseInsert() {
+void Reassembler::recurseInsert() {
   //在这里进行递归的插入操作
-  if(output_.writer().available_capacity() == 0){
-    return false;
-  }
-
-
-  //首先停止条件，有两种停止条件，_internalBuffer为空或者没有index符合要求的数据
-  for(auto &subs: _internalBuffer)
+  //根据index从小到大遍历，看看有能否插入的byte，插入完之后对已插入的byte进行标记
+  for(auto it = _internalBuffer.begin();it!=_internalBuffer.end();)
   {
-    if(subs.first == _currentIndex)
+    if(it->first<_currentIndex)
     {
-
-      //capacity需要大于datalength才能插入
-      //开始插入
-      
-      output_.writer().push(std::string(1,subs.second.first));
-      _currentIndex ++;
-      //如果是结束符号，需要关闭writer
-      if(subs.second.second)
+      //删除！
+      it = _internalBuffer.erase(it);
+    }
+    else if(it->first == _currentIndex)
+    {
+      if(output_.writer().available_capacity() == 0)
       {
-        output_.writer().close();
-        return false;
+        //没空间力
+        return;
       }
       else{
-        _internalBuffer.erase(subs.first);
-        return true;
+        //插入
+        output_.writer().push(std::string(1,it->second.first));
+        _currentIndex++;
+        //判断是不是结束符
+        if(it->second.second)
+        {
+          it = _internalBuffer.erase(it);
+          output_.writer().close();
+          return;
+        }
+        else
+        {
+          it = _internalBuffer.erase(it);
+        }
       }
-      //插入完并且不算结束之后把当前插入的从buffer中删掉
+    }
+    else
+    {
+      return;
     }
   }
-  return false;
 }

@@ -4,6 +4,7 @@
 #include <queue>
 #include <string>
 #include <string_view>
+#include <cstring>
 class Reader;
 class Writer;
 
@@ -24,7 +25,12 @@ public:
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
   // 改成string好吧，我服了
-  std::string buffer = {};
+  // 改用环形队列！
+
+  std::vector<char> buffer;
+  uint64_t head;
+  uint64_t tail;
+  bool is_full;
   // std::queue<char> buffer =
   // {};//这个用来存储所有的写进来的数据，只有遇到EOF时候才停止，但是不代表这是所有能读的数据，所有能读的数据还是要依据capacity来
   bool closed = false;
