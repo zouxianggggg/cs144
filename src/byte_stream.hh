@@ -28,6 +28,7 @@ protected:
   // 改用环形队列！
 
   std::vector<char> buffer;
+  mutable std::string pinijebuffer;
   uint64_t head;
   uint64_t tail;
   bool is_full;

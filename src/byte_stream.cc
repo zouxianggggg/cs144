@@ -2,7 +2,7 @@
 
 using namespace std;
 
-ByteStream::ByteStream( uint64_t capacity ) : buffer(capacity),head(0),tail(0),is_full(false),capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : buffer(capacity),pinijebuffer({}),head(0),tail(0),is_full(false),capacity_( capacity ) {}
 
 bool Writer::is_closed() const
 {
@@ -80,21 +80,14 @@ uint64_t Reader::bytes_popped() const
 string_view Reader::peek() const
 {
   // Your code here.
-  string peekreturn = "";
-  //peekreturn.clear();
-  //peekreturn.reserve(buffered); 
-  if(head < tail)
+  pinijebuffer.clear();
+  //pinijebuffer.reserve(buffered);
+  //uint64_t len = capacity_-head;
+  for(uint64_t i=0;i<buffered;i++)
   {
-    peekreturn.append(buffer.begin()+head,buffer.begin()+tail);
+    pinijebuffer.push_back(buffer[(head+i)%capacity_]);
   }
-  else
-  {
-    peekreturn.append(buffer.begin()+head,buffer.end()); 
-    peekreturn.append(buffer.begin(),buffer.begin()+tail);
-  }
-  //string_view ret = peekreturn;
-  
-  return string_view(&buffer[head],capacity_-head);
+  return std::string_view(pinijebuffer);
 }
 
 void Reader::pop( uint64_t len )
