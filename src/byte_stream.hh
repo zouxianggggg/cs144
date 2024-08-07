@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include <queue>
+#include <deque>
 #include <string>
 #include <string_view>
-#include <cstring>
+
 class Reader;
 class Writer;
 
@@ -24,22 +24,15 @@ public:
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
-  // 改成string好吧，我服了
-  // 改用环形队列！
-
-  std::vector<char> buffer;
-  mutable std::string pinijebuffer;
-  uint64_t head;
-  uint64_t tail;
-  bool is_full;
-  // std::queue<char> buffer =
-  // {};//这个用来存储所有的写进来的数据，只有遇到EOF时候才停止，但是不代表这是所有能读的数据，所有能读的数据还是要依据capacity来
-  bool closed = false;
-  uint64_t capacity_;
-  uint64_t buffered = 0;
-  uint64_t totalpoped = 0;
-  uint64_t totalpushed = 0;
-  bool error_ {};
+  std::deque<std::string> buffer_ {};
+  std::deque<std::string_view> buffer_view_ {};
+  uint64_t capacity_ { 0 };
+  uint64_t available_capacity_ { 0 };
+  uint64_t bytes_pushed_ { 0 };
+  uint64_t bytes_popped_ { 0 };
+  uint64_t bytes_buffered_ { 0 };
+  bool error_ { false };
+  bool is_closed_ { false };
 };
 
 class Writer : public ByteStream

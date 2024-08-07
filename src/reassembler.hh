@@ -8,7 +8,7 @@ class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) ,_currentIndex(0),_internalBuffer(){}
+  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) ,First_UnassembledIndex(0),ending_index(0),ending_flag(false),hashmap(){}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -43,11 +43,18 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
-  void recurseInsert();
+
   ByteStream output_; // the Reassembler writes to this ByteStream
 
-  //我的想法是用一个map来作为reassembler的缓冲区，不需要考虑index重复的情况，用index来作为
-  uint64_t _currentIndex;
+  //当前internalbuffer里面暂存的字节数
+  //uint64_t BufferPending;
+  //当前的乱序部分的首字节index
+  uint64_t First_UnassembledIndex;
+  //结束字节的索引号，初始化为0；
+  uint64_t ending_index;
+  //为了标识结束索引号是否有效
+  bool ending_flag;
+  //暂存的map
+  std::map<uint64_t,std::string> hashmap;
   //现在是一个byte对应一个index，所以我们需要对每一个byte进行存储
-  std::map<uint64_t,std::pair<char,int>> _internalBuffer;
 };

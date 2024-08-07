@@ -2,124 +2,81 @@
 
 using namespace std;
 
-ByteStream::ByteStream( uint64_t capacity ) : buffer(capacity),pinijebuffer({}),head(0),tail(0),is_full(false),capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), available_capacity_( capacity ) {}
 
 bool Writer::is_closed() const
 {
-  // Your code here.
-  return this->closed;
+  return is_closed_;
 }
 
 void Writer::push( string data )
 {
-  uint64_t datalength = data.size();
-  uint64_t writesize = std::min(datalength,available_capacity());
-  //现在有writesize大小的空间可以写
-  //记录一下data写入到哪个字节了
-  uint64_t datawriteindex = 0;
-  while (writesize)
-  {
-    //先算一下不需要循环回到数组头的写入部分的大小
-    //如果说不需要的回到数组头的话，那写入部分就是writesize，
-    //如果需要回的话，那么当前写入的大小就是总大小减去tail的位置
-    uint64_t spacetoend = std::min(writesize, capacity_-tail);
-    //然后开始对这一部分进行写入
-    memcpy(buffer.data()+tail,data.data()+datawriteindex,spacetoend);
-    //移动datawriteindex
-    datawriteindex += spacetoend;
-    tail = (tail+spacetoend)%capacity_;
-    writesize -= spacetoend;
-    is_full = ((tail == head)&&(tail!=0));
-    buffered += spacetoend;
-    totalpushed += spacetoend;
+  auto len = min( available_capacity_, data.size() );
+  if ( len < data.size() ) {
+    data = data.substr( 0, len );
   }
-  
-
-
-
-  // // Your code here.
-  // uint64_t datasize = data.size();
-  // datasize = std::min( datasize, available_capacity() );
-  // buffer.append( data.substr( 0, datasize ) );
-  // buffered += datasize;
-  // totalpushed += datasize;
+  if ( len > 0 ) {
+    bytes_pushed_ += len;
+    bytes_buffered_ += len;
+    available_capacity_ -= len;
+    buffer_.emplace_back( move( data ) );
+    buffer_view_.emplace_back( buffer_.back() );
+  }
 }
 
 void Writer::close()
 {
-  this->closed = true;
-  // Your code here.
+  is_closed_ = true;
 }
 
 uint64_t Writer::available_capacity() const
 {
-  // Your code here.
-  if(is_full)
-    return 0;
-  return capacity_ - buffered;
+  return available_capacity_;
 }
 
 uint64_t Writer::bytes_pushed() const
 {
-  // Your code here.
-  return totalpushed;
+  return bytes_pushed_;
 }
 
 bool Reader::is_finished() const
 {
-  // Your code here.
-  return closed && ( buffered == 0 );
+  return is_closed_ && bytes_buffered_ == 0;
 }
 
 uint64_t Reader::bytes_popped() const
 {
-  // Your code here.
-  return totalpoped;
+  return bytes_popped_;
 }
 
 string_view Reader::peek() const
 {
-  // Your code here.
-  pinijebuffer.clear();
-  //pinijebuffer.reserve(buffered);
-  //uint64_t len = capacity_-head;
-  for(uint64_t i=0;i<buffered;i++)
-  {
-    pinijebuffer.push_back(buffer[(head+i)%capacity_]);
-  }
-  return std::string_view(pinijebuffer);
+  return buffer_view_.front();
 }
 
 void Reader::pop( uint64_t len )
 {
-  //pop的话是不是都不用实际修改数组里面的值，只需要移动head就好了
-  uint64_t poplen = std::min(len,buffered);
-  while (poplen)
-  {
-    //先计算不需要回到数组头的移动的head的长度
-    uint64_t movetoend = std::min(len,capacity_-head);
-    //开始pop
-    head = (head+movetoend)%capacity_;
-    buffered -= movetoend;
-    totalpoped += movetoend;
-    poplen -= movetoend;
-    is_full = false;
+  len = min( len, bytes_buffered_ );
+
+  auto sz = len;
+
+  while ( len > 0 ) {
+    auto size = buffer_view_.front().size();
+    if ( len >= size ) {
+      buffer_view_.pop_front();
+    } else {
+      buffer_view_.front().remove_prefix( len );
+      break;
+    }
+    len -= size;
   }
-  
 
-
-
-
-/*   // Your code here.
-  len = std::min( len, buffered );
-
-  buffer.erase( 0, len );
-  buffered -= len;
-  totalpoped += len; */
+  bytes_buffered_ -= sz;
+  bytes_popped_ += sz;
+  available_capacity_ += sz;
 }
 
 uint64_t Reader::bytes_buffered() const
 {
-  // Your code here.
-  return buffered;
+  return bytes_buffered_;
 }
