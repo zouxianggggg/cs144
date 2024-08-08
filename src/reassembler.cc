@@ -26,9 +26,10 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     stIndex = First_UnassembledIndex-first_index;
   }
   //先截取吧
-  
+  //这里截取index可能会超过当前的字符串
 
   uint64_t len = data.size();
+  if(len<stIndex) return;
   len = min(len-stIndex,First_UnassembledIndex+output_.writer().available_capacity()-first_index);
   //len = min(len,data.size()-stIndex);
   string curdata = data.substr(stIndex,len);
@@ -80,7 +81,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
         isVanished = true;
     }
     }
-    //左边合并完了，开始合并右边
+    //左边合并完了，开始合并右边，右边所有的，不会只有一个
     auto rightside = hashmap.lower_bound(curdataIndex);
     if(rightside == hashmap.end())
     {
@@ -107,16 +108,30 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
           hashmap.erase(rightside);
         }
         else{
-          //这里写错了
-          uint64_t overlaplength = (curdataIndex + curdata.size()) - rightside->first;
-          if(overlaplength < rightside->second.size())
+          //现在的情况是当前data覆盖了若干个map里已有的数据，需要吧
+          size_t overlaplength = (curdataIndex + curdata.size()) - rightside->first;
+          while (overlaplength >= rightside->second.size())
           {
-            curdata.append(rightside->second.substr(overlaplength));
-
-            hashmap.emplace(std::make_pair(curdataIndex,curdata));
-
+            /* code */
             hashmap.erase(rightside);
+            rightside = hashmap.lower_bound(curdataIndex);
+            if(rightside!=hashmap.end())
+            {
+                  overlaplength = ((curdataIndex + curdata.size()) > rightside->first)?((curdataIndex + curdata.size()) - rightside->first):0;
+            }
+            else{
+              overlaplength = 0;
+              break;
+            }
+            
           }
+          if(overlaplength > 0)
+          {
+              curdata.append(rightside->second.substr(overlaplength)); 
+              hashmap.erase(rightside);
+          }
+          // hashmap.erase(rightside);
+          hashmap.emplace(std::make_pair(curdataIndex,curdata));
         }
       }
       else{
@@ -127,9 +142,8 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
             if(overlaplength < rightside->second.size())
             {
               leftside->second.append(rightside->second.substr(overlaplength));
-
-              hashmap.erase(rightside);
             }
+              hashmap.erase(rightside);
             
         }
       }
