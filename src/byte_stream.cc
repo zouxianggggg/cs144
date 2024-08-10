@@ -2,7 +2,7 @@
 
 using namespace std;
 
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), available_capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ) {}
 
 bool Writer::is_closed() const
 {
@@ -11,72 +11,73 @@ bool Writer::is_closed() const
 
 void Writer::push( string data )
 {
-  auto len = min( available_capacity_, data.size() );
-  if ( len < data.size() ) {
-    data = data.substr( 0, len );
+  if ( is_closed() )
+    return;
+  if ( data.size() > available_capacity() )
+    data.resize( available_capacity() );
+  if ( !data.empty() ) {
+    // 没事不要塞空字节字符串进去
+    num_bytes_pushed_ += data.size();
+    num_bytes_buffered_ += data.size();
+    bytes_.emplace( move( data ) );
   }
-  if ( len > 0 ) {
-    bytes_pushed_ += len;
-    bytes_buffered_ += len;
-    available_capacity_ -= len;
-    buffer_.emplace_back( move( data ) );
-    buffer_view_.emplace_back( buffer_.back() );
-  }
+  // 临界条件：pop 了所有字节导致队列为空且 view_wnd_ 为空
+  if ( view_wnd_.empty() && !bytes_.empty() )
+    view_wnd_ = bytes_.front();
 }
 
 void Writer::close()
 {
-  is_closed_ = true;
+  if ( !is_closed_ ) {
+    is_closed_ = true;
+    // 防止重复关闭，然后不断塞入 EOF
+    bytes_.emplace( string( 1, EOF ) );
+  }
 }
 
 uint64_t Writer::available_capacity() const
 {
-  return available_capacity_;
+  return capacity_ - num_bytes_buffered_;
 }
 
 uint64_t Writer::bytes_pushed() const
 {
-  return bytes_pushed_;
+  return num_bytes_pushed_;
 }
 
 bool Reader::is_finished() const
 {
-  return is_closed_ && bytes_buffered_ == 0;
+  // 当且仅当写者关闭、存在队列中未 pop 的字节数为 0
+  return is_closed_ && bytes_buffered() == 0;
 }
 
 uint64_t Reader::bytes_popped() const
 {
-  return bytes_popped_;
+  return num_bytes_popped_;
 }
 
 string_view Reader::peek() const
 {
-  return buffer_view_.front();
+  return view_wnd_;
 }
 
 void Reader::pop( uint64_t len )
 {
-  len = min( len, bytes_buffered_ );
-
-  auto sz = len;
-
-  while ( len > 0 ) {
-    auto size = buffer_view_.front().size();
-    if ( len >= size ) {
-      buffer_view_.pop_front();
-    } else {
-      buffer_view_.front().remove_prefix( len );
-      break;
-    }
-    len -= size;
+  auto remainder = len;
+  while ( remainder >= view_wnd_.size() && remainder != 0 ) {
+    // 不断清掉能从队列中 pop 出去的字节
+    remainder -= view_wnd_.size();
+    bytes_.pop();
+    view_wnd_ = bytes_.empty() ? ""sv : bytes_.front();
   }
+  if ( !view_wnd_.empty() )
+    view_wnd_.remove_prefix( remainder );
 
-  bytes_buffered_ -= sz;
-  bytes_popped_ += sz;
-  available_capacity_ += sz;
+  num_bytes_buffered_ -= len;
+  num_bytes_popped_ += len;
 }
 
 uint64_t Reader::bytes_buffered() const
 {
-  return bytes_buffered_;
+  return num_bytes_buffered_;
 }

@@ -2,13 +2,32 @@
 
 #include "byte_stream.hh"
 #include <unordered_map>
-#include <map>
+#include <set>
 #include <utility>
+
+struct interval
+{
+  /* data */
+  uint64_t start_idx;
+  uint64_t end_idx;
+  string data;
+
+  //定义两个interval之间的大小关系
+  bool operator<(const interval& other) const {
+    if(start_idx == other.start_idx)
+    {
+      return end_idx < other.end_idx;
+    }
+    return start_idx < other.start_idx;
+  };
+};
+
+
 class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) ,First_UnassembledIndex(0),ending_index(0),ending_flag(false),hashmap(){}
+  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -43,18 +62,11 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
-
+  //把每一段的data的开始index和结束index都直接显示出来，然后就是区间合并的问题
+  set<interval> buffers {};
+  uint64_t first_unassembled_index = 0;                                         
+  uint64_t eof_index = UINT64_MAX;  
   ByteStream output_; // the Reassembler writes to this ByteStream
 
-  //当前internalbuffer里面暂存的字节数
-  //uint64_t BufferPending;
-  //当前的乱序部分的首字节index
-  uint64_t First_UnassembledIndex;
-  //结束字节的索引号，初始化为0；
-  uint64_t ending_index;
-  //为了标识结束索引号是否有效
-  bool ending_flag;
-  //暂存的map
-  std::map<uint64_t,std::string> hashmap;
-  //现在是一个byte对应一个index，所以我们需要对每一个byte进行存储
+  
 };
