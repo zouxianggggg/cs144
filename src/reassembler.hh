@@ -1,9 +1,9 @@
 #pragma once
 
 #include "byte_stream.hh"
-#include <unordered_map>
-#include <set>
-#include <vector>
+
+#include <list>
+
 #include <utility>
 #include <string>
 struct interval
@@ -64,7 +64,7 @@ public:
 
 private:
   //把每一段的data的开始index和结束index都直接显示出来，然后就是区间合并的问题
-  std::set<interval> buffers {};
+  std::list<interval> buffers {};
   uint64_t first_unassembled_index = 0;                                         
   uint64_t eof_index = UINT64_MAX;  
   ByteStream output_; // the Reassembler writes to this ByteStream

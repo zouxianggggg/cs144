@@ -37,42 +37,64 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
  //截取data
  string curData = data.substr(curStartIdx-first_index,curEndIdx-curStartIdx);
  interval itv(curStartIdx,curEndIdx,curData);
- //插入set并合并
- //先直接插入set
- buffers.insert(itv);
- //合并暂存到vector中
- vector<interval> merged;
-
- auto it = buffers.begin();
- interval cur = *it;
- it++;
- while (it!=buffers.end())
- {
-    if(it->start_idx <= cur.end_idx)
+ //插入list并合并
+if(buffers.empty())
+{
+    buffers.insert(buffers.begin(),itv);
+}
+else
+{
+ //遍历list，找到第一个比他大的节点
+ auto it = lower_bound(buffers.begin(),buffers.end(),itv);
+ auto prev = it;
+ //检查是否是begin
+ if(it == buffers.begin()){
+    //那就在前面直接插入
+    buffers.insert(it,itv);
+    prev = std::prev(it);
+ }
+ else{
+    //如果前面还有元素
+ 
+    //先合并左边的
+    prev = std::prev(it);
+ 
+    if(prev->end_idx >= itv.start_idx)
     {
-        cur.end_idx = max(cur.end_idx,it->end_idx);
-        if(cur.end_idx <= it->end_idx)
+        //可以合并
+        if(prev->end_idx <= itv.end_idx)
         {
-            //拼接的话就是取前面的data的不重叠的部分直接加上后面的，然后前面的不重叠的部分就是两个startidx相减
-            cur.data = cur.data.substr(0,it->start_idx - cur.start_idx) + it->data;
+            prev->data = prev->data.substr(0,itv.start_idx - prev->start_idx) + itv.data;
+            prev->end_idx = itv.end_idx;
         }
+        itv = *prev;
     }
     else{
-        merged.push_back(cur);
-        cur = *it;
+        //不能合并
+        buffers.insert(it,itv);
+        prev++;
     }
-    it++;
+
  }
- merged.push_back(cur);
- //现在塞回set
- buffers.clear();
- for(const auto& m:merged)
+ //此时prev要么就是合并好的左边节点，要么就是新加入的节点
+ //合并右边的
+ while(it!=buffers.end() && itv.end_idx>=it->start_idx)
  {
-    buffers.insert(m);
+    if(it->end_idx > itv.end_idx)
+    {
+        //需要合并，因为itv代表的prev是较小的那个
+        prev->data = prev->data.substr(0,it->start_idx - itv.start_idx) + it->data;
+        prev->end_idx = it->end_idx;
+    }
+    it = buffers.erase(it);
+    itv = *prev;
  }
+}
+
+
 
  //然后就是进行push操作
-it =buffers.begin();
+auto it =buffers.begin();
  while(it->start_idx == first_unassembled_index)
  {
     output_.writer().push(it->data);
