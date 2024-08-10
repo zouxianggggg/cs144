@@ -95,15 +95,11 @@ else
 
  //然后就是进行push操作
 auto it =buffers.begin();
- while(it->start_idx == first_unassembled_index)
+ while(it!=buffers.end()&&it->start_idx == first_unassembled_index)
  {
     output_.writer().push(it->data);
     first_unassembled_index = it->end_idx;
     it = buffers.erase(it);
-    if(it == buffers.end())
-    {
-        break;
-    }
  }
 
  if(first_unassembled_index >= eof_index)
