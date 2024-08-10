@@ -3,14 +3,15 @@
 #include "byte_stream.hh"
 #include <unordered_map>
 #include <set>
+#include <vector>
 #include <utility>
-
+#include <string>
 struct interval
 {
   /* data */
   uint64_t start_idx;
   uint64_t end_idx;
-  string data;
+  std::string data;
 
   //定义两个interval之间的大小关系
   bool operator<(const interval& other) const {
@@ -63,7 +64,7 @@ public:
 
 private:
   //把每一段的data的开始index和结束index都直接显示出来，然后就是区间合并的问题
-  set<interval> buffers {};
+  std::set<interval> buffers {};
   uint64_t first_unassembled_index = 0;                                         
   uint64_t eof_index = UINT64_MAX;  
   ByteStream output_; // the Reassembler writes to this ByteStream
