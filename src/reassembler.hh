@@ -4,8 +4,8 @@
 
 #include <list>
 
-#include <utility>
 #include <string>
+#include <utility>
 struct interval
 {
   /* data */
@@ -13,16 +13,15 @@ struct interval
   uint64_t end_idx;
   std::string data;
 
-  //定义两个interval之间的大小关系
-  bool operator<(const interval& other) const {
-    if(start_idx == other.start_idx)
-    {
+  // 定义两个interval之间的大小关系
+  bool operator<( const interval& other ) const
+  {
+    if ( start_idx == other.start_idx ) {
       return end_idx < other.end_idx;
     }
     return start_idx < other.start_idx;
   };
 };
-
 
 class Reassembler
 {
@@ -63,11 +62,9 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
-  //把每一段的data的开始index和结束index都直接显示出来，然后就是区间合并的问题
+  // 把每一段的data的开始index和结束index都直接显示出来，然后就是区间合并的问题
   std::list<interval> buffers {};
-  uint64_t first_unassembled_index = 0;                                         
-  uint64_t eof_index = UINT64_MAX;  
+  uint64_t first_unassembled_index = 0;
+  uint64_t eof_index = UINT64_MAX;
   ByteStream output_; // the Reassembler writes to this ByteStream
-
-  
 };
