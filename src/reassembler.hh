@@ -8,12 +8,10 @@
 #include <utility>
 struct interval
 {
-  /* data */
   uint64_t start_idx;
   uint64_t end_idx;
   std::string data;
 
-  // 定义两个interval之间的大小关系
   bool operator<( const interval& other ) const
   {
     if ( start_idx == other.start_idx ) {
