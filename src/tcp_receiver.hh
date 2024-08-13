@@ -29,6 +29,4 @@ private:
   Reassembler reassembler_;
   std::optional<Wrap32> ISN;
   uint64_t ckeckpoint = 0;
-  // bool SYN {};
-  // bool RST {};
 };

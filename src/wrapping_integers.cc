@@ -11,7 +11,7 @@ Wrap32 Wrap32::wrap( uint64_t n, Wrap32 zero_point )
 uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
 {
   // 就是找到所有zero_point对应的absolute seq中最接近checkpoint的结果
-  // 你特么的意思是自己的raw_value才是那个seq？好吧，姑且懂了
+
   // 先计算checkpoint对应的倍数n
   uint64_t cpn = ( checkpoint & ( 0xFFFFFFFF00000000 ) ) >> 32;
   uint64_t currentRaw; // 这是this.raw_value对应的第一个absolute seq，然后再乘上对应的倍数进行比较即可
