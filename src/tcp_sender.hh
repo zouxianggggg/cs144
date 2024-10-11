@@ -45,7 +45,23 @@ public:
 
 private:
   // Variables initialized in constructor
-  ByteStream input_;
-  Wrap32 isn_;
-  uint64_t initial_RTO_ms_;
+  ByteStream input_;//由构造函数传过来
+  Wrap32 isn_;      //由构造函数传过来
+  uint64_t initial_RTO_ms_; //
+
+
+
+
+
+
+
+  // //超时重传的RTO，因为会有指数退避机制
+  // uint64_t current_RTO_ms_;
+
+  // //维护从接收端收到的滑动窗口信息
+  // uint64_t windowsize {0};
+
+  // //使用queue来存储未被确认的segment,因为确认报文肯定是按照顺序来的，所以可以用queue，不会发生后面的segment先被确认的情况
+  // std::queue<TCPSenderMessage> outstandings {};
+  
 };

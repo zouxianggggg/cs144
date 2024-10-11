@@ -17,13 +17,23 @@ uint64_t TCPSender::consecutive_retransmissions() const
 
 void TCPSender::push( const TransmitFunction& transmit )
 {
-  // Your code here.
+  //不断的从bytestream读取数据并赶紧发送出去，这里不关心超时重传的报文，只处理滑动窗口部分？
+  //首先第一步是看滑动窗口的大小，如果滑动窗口大小为0，就当作是1。这样算是一种保活机制？不然发送端不发了那
+  //接收端也不会返回新的ack，这样就直接卡住了。
+  //同时也是为了处理第一次发送，即握手这部分操作
+  //获取当前的window size
+  //uint64_t curWindowsSize = windowsize==0?1:windowsize;
+
+  
+
   (void)transmit;
+  
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const
 {
   // Your code here.
+
   return {};
 }
 
